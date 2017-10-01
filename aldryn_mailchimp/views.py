@@ -9,7 +9,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.utils.translation import ugettext, ugettext_lazy as _
 from django.views.generic import FormView, DetailView
 
-from pyrate.services import mailchimp
+from mailchimp3 import MailChimp
 
 from .utils import get_language_for_code
 from .forms import SubscriptionPluginForm
@@ -17,50 +17,73 @@ from .models import SubscriptionPlugin, Campaign
 
 
 ERROR_MESSAGES = {
-    104: _('Invalid API-Key'),
-    200: _('The selected list does not exist.'),
-    214: _('You are already subscribed to our list.'),
-    230: _('You are already subscribed to our list.'),
+    500: ugettext('Oops, something must have gone wrong. Please try again later.'),
+    401: ugettext('Invalid Mailchimp Username or API-Key.'),
+    404: ugettext('The selected list does not exist.'),
+    200: ugettext('You are already subscribed to our list.'),
+    201: ugettext('You have successfully subscribed to our mailing list.'),
 }
 
 
 class SubscriptionView(FormView):
-
     form_class = SubscriptionPluginForm
     template_name = 'aldryn_mailchimp/subscription.html'
 
     def form_valid(self, form):
-        h = mailchimp.MailchimpPyrate(settings.MAILCHIMP_API_KEY)
+        mclient = MailChimp(
+            settings.MAILCHIMP_USERNAME, settings.MAILCHIMP_API_KEY)
+
         plugin = get_object_or_404(
             SubscriptionPlugin, pk=form.cleaned_data['plugin_id'])
 
-        merge_vars = None
+        # check if list exist or Username/API KEY wrong
+        try:
+            mclient.lists.get(list_id=plugin.list_id)
+        except Exception as err:
+            try:
+                message = ERROR_MESSAGES[err.response.status_code]
+            except (AttributeError, KeyError):
+                message = ERROR_MESSAGES[500]
+
+            if self.request.user.is_superuser and err:
+                message = ugettext('{0} ({1})').format(message, err)
+
+            messages.error(self.request, message)
+            return redirect(form.cleaned_data['redirect_url'])
+
+        # set double opt-in or not
+        optin = 'subscribed'
+        if plugin.optin:
+            optin = 'pending'
+
+        data = {
+            'email_address': form.cleaned_data['email'],
+            'status': optin
+        }
+
         if plugin.assign_language:
             language = get_language_for_code(self.request.LANGUAGE_CODE)
             if language:
-                merge_vars = {'mc_language': language}
+                data.update({'language': language})
 
+        # add member to list
         try:
-            h.subscribe_to_list(
-                list_id=plugin.list_id,
-                user_email=form.cleaned_data['email'],
-                merge_vars=merge_vars
-            )
-        except Exception as exc:
-            try:
-                message = ERROR_MESSAGES[exc.code]
-            except (AttributeError, KeyError):
-                message = ugettext('Oops, something must have gone wrong. '
-                                   'Please try again later.')
+            mclient.lists.members.create(plugin.list_id, data)
+        except Exception as err:
+            json_err = err.response.json()
+            message = ERROR_MESSAGES[500]
+            if err.response.status_code == 400:
+                if json_err.get('title') == 'Member Exists':
+                    message = ERROR_MESSAGES[200]
 
-            if self.request.user.is_superuser and hasattr(exc, 'code'):
-                message = ugettext(
-                    '%s (MailChimp Error (%s): %s)') % (message, exc.code, exc)
+            if self.request.user.is_superuser and json_err:
+                message = ugettext('{0} ({1})').format(
+                    message,
+                    json_err.get('detail'))
 
             messages.error(self.request, message)
         else:
-            messages.success(self.request, ugettext(
-                'You have successfully subscribed to our mailing list.'))
+            messages.success(self.request, ugettext(ERROR_MESSAGES[201]))
         return redirect(form.cleaned_data['redirect_url'])
 
     def form_invalid(self, form):
@@ -68,6 +91,7 @@ class SubscriptionView(FormView):
 
         if redirect_url:
             message = _('Please enter a valid email.')
+
             messages.error(self.request, message)
             response = HttpResponseRedirect(redirect_url)
         else:
@@ -87,5 +111,6 @@ class CampaignDetail(DetailView):
 
     def get_queryset(self):
         return self.model.objects.published()
+
 
 campaign_detail = CampaignDetail.as_view()

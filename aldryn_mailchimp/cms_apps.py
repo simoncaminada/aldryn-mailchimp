@@ -7,7 +7,9 @@ from cms.apphook_pool import apphook_pool
 
 class CampaignArchive(CMSApp):
     name = _('Campaign Archive')
-    urls = ['aldryn_mailchimp.urls']
+
+    def get_urls(self, page=None, language=None, **kwargs):
+        return['aldryn_mailchimp.urls']
 
 
 apphook_pool.register(CampaignArchive)

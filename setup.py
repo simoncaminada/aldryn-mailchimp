@@ -5,12 +5,11 @@ from aldryn_mailchimp import __version__
 
 REQUIREMENTS = [
     'django-admin-sortable',
-    'pyrate>=0.5a5',
-    'oauthlib<0.7.0',
+    'mailchimp3>=2.0.9',
 ]
 
 CLASSIFIERS = [
-    'Development Status :: 2 - Pre-Alpha',
+    'Development Status :: 4 - Beta',
     'Environment :: Web Environment',
     'Framework :: Django',
     'Intended Audience :: Developers',
@@ -21,6 +20,7 @@ CLASSIFIERS = [
     'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3.5',
 ]
 
 setup(

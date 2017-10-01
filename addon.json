@@ -2,7 +2,6 @@
     "package-name": "aldryn-mailchimp",
     "installed-apps": [
         "adminsortable",
-        "pyrate",
         "aldryn_mailchimp"
     ]
 }

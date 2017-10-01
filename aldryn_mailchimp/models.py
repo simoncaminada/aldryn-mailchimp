@@ -13,26 +13,35 @@ from adminsortable.fields import SortableForeignKey
 @python_2_unicode_compatible
 class SubscriptionPlugin(CMSPlugin):
 
-    list_id = models.CharField(_('List ID'), max_length=20)
+    list_id = models.CharField(
+        _('List ID'), max_length=20,
+        help_text=_('ID of the list found in Mailchimp '
+                    'list: Settings > List name and defaults'))
+    optin = models.BooleanField(
+        _('Double Opt-In'), default=True,
+        help_text=_('If select perform double opt-in.'))
     assign_language = models.BooleanField(
         _('Save user\'s language'), default=True, help_text=_(
             'Save the user\'s language based on the page language'))
 
     def __str__(self):
-        return unicode(self.list_id)
+        optin = _('No')
+        if self.optin:
+            optin = _('Yes')
+        return _('List ID: {}, Double Opt-In: {}').format(self.list_id, optin)
 
 
 class CampaignManager(models.Manager):
     def published(self):
         return self.filter(send_time__isnull=False, hidden=False)
 
+
 @python_2_unicode_compatible
 class Category(Sortable):
     name = models.CharField(_('name'), max_length=255)
     smart_match = models.BooleanField(
-        _('Matching'), default=True, help_text=_(
-            'Match incoming campaigns to categories based on keywords')
-    )
+        _('Matching'), default=True,
+        help_text=_('Match incoming campaigns to categories based on keywords'))
 
     class Meta(Sortable.Meta):
         ordering = ('order', 'name')
@@ -40,18 +49,23 @@ class Category(Sortable):
         verbose_name_plural = _('Categories')
 
     def __str__(self):
-        return unicode(self.name)
+        return self.name
 
 
 @python_2_unicode_compatible
 class Keyword(Sortable):
-    value = models.CharField(_('value'), max_length=255, unique=True)
-    category = SortableForeignKey(Category, verbose_name=_('category'))
-    scope_name = models.BooleanField(_('search in campaign name'), default=True)
+    value = models.CharField(
+        _('value'), max_length=255, unique=True)
+    category = SortableForeignKey(
+        Category, verbose_name=_('category'))
+    scope_name = models.BooleanField(
+        _('search in campaign name'), default=True)
     scope_subject = models.BooleanField(
         _('search in campaign subject'), default=False)
     scope_content = models.BooleanField(
         _('search in campaign content'), default=False)
+    scope_listname = models.BooleanField(
+        _('search in campaign list name'), default=True)
 
     class Meta(Sortable.Meta):
         ordering = ('order', 'value')
@@ -59,7 +73,7 @@ class Keyword(Sortable):
         verbose_name_plural = _('Keywords')
 
     def __str__(self):
-        return '%s (%s)' % (self.value, self.category.name)
+        return '{0} ({1})'.format(self.value, self.category.name)
 
 
 @python_2_unicode_compatible
@@ -71,6 +85,10 @@ class Campaign(models.Model):
         _('subject'), max_length=255, blank=True, null=True, editable=False)
     display_name = models.CharField(
         _('display name'), max_length=255, blank=True, null=True)
+    list_name = models.CharField(
+        _('list name'), max_length=255, blank=True, null=True, editable=False)
+    list_id = models.CharField(
+        _('list id'), max_length=50, blank=True, null=True, editable=False)
     send_time = models.DateTimeField(
         _('time sent'), blank=True, null=True, editable=False)
     content_text = models.TextField(
@@ -105,9 +123,16 @@ class CampaignArchivePlugin(CMSPlugin):
         help_text=_('Leave blank to display all')
     )
     categories = models.ManyToManyField(
-        Category, verbose_name=_('filter by category/categories'),
-        blank=True, null=True
+        Category, verbose_name=_('filter by category/categories')
     )
+
+    def __str__(self):
+        if self.count:
+            count = self.count
+        else:
+            count = 'All'
+        return _('Show: {}, Categories: {}').format(
+            count, ', '.join(str(x) for x in self.categories.all()))
 
     def copy_relations(self, old_instance):
         self.categories = old_instance.categories.all()
@@ -118,3 +143,6 @@ class SelectedCampaignsPlugin(CMSPlugin):
 
     def copy_relations(self, old_instance):
         self.campaigns = old_instance.campaigns.all()
+
+    def __str__(self):
+        return ', '.join(str(x) for x in self.campaigns.all())

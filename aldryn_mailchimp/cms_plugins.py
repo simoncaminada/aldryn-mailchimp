@@ -6,17 +6,23 @@ from django.utils.translation import ugettext_lazy as _
 from cms.plugin_base import CMSPluginBase
 from cms.plugin_pool import plugin_pool
 
+from .models import (
+    Campaign,
+    SubscriptionPlugin,
+    CampaignArchivePlugin,
+    SelectedCampaignsPlugin
+)
 from .views import SubscriptionView
-from .models import Campaign, SubscriptionPlugin, CampaignArchivePlugin, SelectedCampaignsPlugin
 from .forms import SubscriptionPluginForm
 
 
+@plugin_pool.register_plugin
 class SubscriptionCMSPlugin(CMSPluginBase):
     cache = False
     render_template = 'aldryn_mailchimp/snippets/_subscription.html'
-    name = _('Subscription')
-    model = SubscriptionPlugin
     module = _('MailChimp')
+    name = _('Subscription Form')
+    model = SubscriptionPlugin
 
     def render(self, context, instance, placeholder):
         request = context['request']
@@ -31,15 +37,13 @@ class SubscriptionCMSPlugin(CMSPluginBase):
     def get_plugin_urls(self):
         subscription_view = self.get_subscription_view()
 
-        return patterns('',
-            url(
-                r'^subscribe/$', never_cache(subscription_view),
-                name='aldryn-mailchimp-subscribe'),
+        return patterns('', url(
+            r'^subscribe/$', never_cache(subscription_view),
+            name='aldryn-mailchimp-subscribe'),
         )
 
-plugin_pool.register_plugin(SubscriptionCMSPlugin)
 
-
+@plugin_pool.register_plugin
 class CampaignArchive(CMSPluginBase):
     render_template = 'aldryn_mailchimp/plugins/campaign_archive.html'
     name = _('Campaign Archive')
@@ -55,9 +59,8 @@ class CampaignArchive(CMSPluginBase):
         context['object_list'] = objects
         return context
 
-plugin_pool.register_plugin(CampaignArchive)
 
-
+@plugin_pool.register_plugin
 class SelectedCampaigns(CMSPluginBase):
     render_template = 'aldryn_mailchimp/plugins/selected_campaigns.html'
     name = _('Selected Campaigns')
@@ -65,7 +68,5 @@ class SelectedCampaigns(CMSPluginBase):
     model = SelectedCampaignsPlugin
 
     def render(self, context, instance, placeholder):
-        context['object_list'] = instance.campaigns.objects.all()
+        context['object_list'] = instance.campaigns.all()
         return context
-
-plugin_pool.register_plugin(SelectedCampaigns)

@@ -2,6 +2,7 @@
 
 <form class="mailchimp-subscription-form" action="{% url 'admin:aldryn-mailchimp-subscribe' %}" method="POST">
 	{% csrf_token %}
-	{{ form.as_ul }}
-	<input type="submit" value="{% trans 'Subscribe' %}"/>
+	<ul>{{ form.as_ul }}
+	<li><input type="submit" value="{% trans 'Subscribe' %}"/></li>
+	</ul>
 </form>

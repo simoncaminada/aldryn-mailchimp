@@ -47,8 +47,8 @@ msgid "Selected Campaigns"
 msgstr "Ausgewählte Kampagnen"
 
 #: forms.py:8
-msgid "E-mail"
-msgstr ""
+msgid "Email"
+msgstr "E-mail"
 
 #: models.py:13
 msgid "List ID"

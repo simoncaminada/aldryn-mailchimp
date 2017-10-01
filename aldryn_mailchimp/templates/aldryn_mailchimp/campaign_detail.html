@@ -1,5 +1,7 @@
-{% extends "fullwidth.html" %}
+{% extends "aldryn_mailchimp/base.html" %}
 {% load sekizai_tags %}
+
+{# recomended style="border: none; overflow: hidden;" #}
 
 {% block content %}
     {% addtoblock 'js' %}
@@ -13,7 +15,7 @@
     {% if object.content_html %}
         <iframe
             src="{% url 'mailchimp_campaign_detail' pk=object.pk slug=object.slug %}?iframe"
-            width="100%" onload='javascript:resizeIframe(this);'>
+            width="100%" onload="javascript:resizeIframe(this);">
         </iframe>
     {% else %}
         <pre>{{ object.content_text }}</pre>
