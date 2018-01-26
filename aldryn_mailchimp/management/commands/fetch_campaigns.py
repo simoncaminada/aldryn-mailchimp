@@ -6,7 +6,8 @@ from django.utils.dateparse import parse_datetime
 
 from mailchimp3 import MailChimp
 
-from ...models import Campaign, Category
+from aldryn-mailchimp.models import Campaign, Category
+from aldryn-mailchimp.utils import get_list_data
 
 
 class Command(BaseCommand):
@@ -17,8 +18,8 @@ class Command(BaseCommand):
     def fetch_keywords():
         keyword_groups = {
             'name': {},
-            'subject': {},
             'listname': {},
+            'subject': {},
             'content': {},
         }
 
@@ -26,10 +27,10 @@ class Command(BaseCommand):
             for kw in category.keyword_set.all():
                 if kw.scope_name:
                     keyword_groups['name'][kw.value.lower()] = kw.category.id
-                if kw.scope_subject:
-                    keyword_groups['subject'][kw.value.lower()] = kw.category.id
                 if kw.scope_listname:
                     keyword_groups['listname'][kw.value.lower()] = kw.category.id
+                if kw.scope_subject:
+                    keyword_groups['subject'][kw.value.lower()] = kw.category.id
                 if kw.scope_content:
                     keyword_groups['content'][kw.value.lower()] = kw.category.id
         return keyword_groups
@@ -38,8 +39,8 @@ class Command(BaseCommand):
         attr_list = (
             # kw-group, campaign-attr
             ('name', 'mc_title'),
-            ('subject', 'subject'),
             ('listname', 'list_name'),
+            ('subject', 'subject'),
             ('content', 'content_text'),
         )
 
@@ -48,8 +49,8 @@ class Command(BaseCommand):
         for kw_group, campaign_attr in attr_list:
             if not category_id:
                 for kw, cat in self.keywords[kw_group].items():
-                    if getattr(campaign, campaign_attr) and \
-                       kw in getattr(campaign, campaign_attr).lower():
+                    if getattr(campaign, campaign_attr) and kw in \
+                       getattr(campaign, campaign_attr).lower():
                         category_id = cat
                         break
 
@@ -59,7 +60,6 @@ class Command(BaseCommand):
         self.keywords = self.fetch_keywords()
         mc = MailChimp(settings.MAILCHIMP_USERNAME, settings.MAILCHIMP_API_KEY)
         response = mc.campaigns.all(get_all=False)
-
         for each in response['campaigns']:
             campaign, created = Campaign.objects.get_or_create(cid=each['id'])
             campaign.send_time = parse_datetime(each['send_time'])
@@ -78,8 +78,8 @@ class Command(BaseCommand):
                 print(e)
                 campaign.hidden = True
             else:
-                campaign.content_text = response_content['plain_text']
-                campaign.content_html = response_content['archive_html']
+                campaign.content_text = response_content.get('plain_text', None)
+                campaign.content_html = response_content.get('archive_html', None)
 
             # match campaign to category (if not set yet)
             if not campaign.category:
@@ -87,6 +87,10 @@ class Command(BaseCommand):
                 if category_id:
                     campaign.category = Category.objects.get(pk=category_id)
 
+            # get list data
+            if each['recipients']['list_id']:
+                campaign.list_data = get_list_data(each['recipients']['list_id'], mc)
+
             campaign.save()
 
-        print('Imported {0} campaigns'.format(response['total_items']))
+        print('imported %i campaigns' % response['total_items'])
