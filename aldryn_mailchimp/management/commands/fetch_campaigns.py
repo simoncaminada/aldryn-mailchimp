@@ -6,8 +6,8 @@ from django.utils.dateparse import parse_datetime
 
 from mailchimp3 import MailChimp
 
-from aldryn-mailchimp.models import Campaign, Category
-from aldryn-mailchimp.utils import get_list_data
+from aldryn_mailchimp.models import Campaign, Category
+from aldryn_mailchimp.utils import get_list_data
 
 
 class Command(BaseCommand):
