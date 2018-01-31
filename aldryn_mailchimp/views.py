@@ -66,6 +66,13 @@ class SubscriptionView(FormView):
             if language:
                 data.update({'language': language})
 
+        merge_data = {}
+        for key, field in form.cleaned_data:
+            if key.startswith('merge_'):
+                merge_data[key.replace('merge_', '')] = field
+        if merge_data:
+            data.update({'merge_fields': merge_data})
+
         # add member to list
         try:
             mclient.lists.members.create(plugin.list_id, data)
