@@ -11,7 +11,6 @@ from aldryn_mailchimp.utils import get_list_data
 
 
 class Command(BaseCommand):
-
     keywords = None
 
     @staticmethod
@@ -50,7 +49,7 @@ class Command(BaseCommand):
             if not category_id:
                 for kw, cat in self.keywords[kw_group].items():
                     if getattr(campaign, campaign_attr) and kw in \
-                       getattr(campaign, campaign_attr).lower():
+                            getattr(campaign, campaign_attr).lower():
                         category_id = cat
                         break
 
@@ -86,10 +85,6 @@ class Command(BaseCommand):
                 category_id = self.search_category(campaign)
                 if category_id:
                     campaign.category = Category.objects.get(pk=category_id)
-
-            # get list data
-            if each['recipients']['list_id']:
-                campaign.list_data = get_list_data(each['recipients']['list_id'], mc)
 
             campaign.save()
 
