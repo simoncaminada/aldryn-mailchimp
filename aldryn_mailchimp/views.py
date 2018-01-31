@@ -67,9 +67,9 @@ class SubscriptionView(FormView):
                 data.update({'language': language})
 
         merge_data = {}
-        for key, field in form.cleaned_data:
+        for key, value in form.cleaned_data.iteritems():
             if key.startswith('merge_'):
-                merge_data[key.replace('merge_', '')] = field
+                merge_data[key.replace('merge_', '')] = value
         if merge_data:
             data.update({'merge_fields': merge_data})
 
