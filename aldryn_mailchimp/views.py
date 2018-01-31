@@ -15,7 +15,6 @@ from .utils import get_language_for_code
 from .utils import get_subscription_plugin_form
 from .models import SubscriptionPlugin, Campaign
 
-
 ERROR_MESSAGES = {
     500: ugettext('Oops, something must have gone wrong. Please try again later.'),
     401: ugettext('Invalid Mailchimp Username or API-Key.'),
@@ -92,19 +91,6 @@ class SubscriptionView(FormView):
         else:
             messages.success(self.request, ugettext(ERROR_MESSAGES[201]))
         return redirect(form.cleaned_data['redirect_url'])
-
-    def form_invalid(self, form):
-        redirect_url = form.data.get('redirect_url')
-
-        if redirect_url:
-            message = _('Please enter a valid email.')
-
-            messages.error(self.request, message)
-            response = HttpResponseRedirect(redirect_url)
-        else:
-            # user has tampered with the redirect_url field.
-            response = HttpResponseBadRequest()
-        return response
 
 
 class CampaignDetail(DetailView):
