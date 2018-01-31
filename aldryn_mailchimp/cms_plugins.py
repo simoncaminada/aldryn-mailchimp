@@ -13,8 +13,7 @@ from .models import (
     SelectedCampaignsPlugin
 )
 from .views import SubscriptionView
-from .forms import SubscriptionPluginForm
-
+from .utils import get_subscription_plugin_form
 
 @plugin_pool.register_plugin
 class SubscriptionCMSPlugin(CMSPluginBase):
@@ -26,7 +25,7 @@ class SubscriptionCMSPlugin(CMSPluginBase):
 
     def render(self, context, instance, placeholder):
         request = context['request']
-        context['form'] = SubscriptionPluginForm(
+        context['form'] = get_subscription_plugin_form()(
             initial={'plugin_id': instance.pk,
                      'redirect_url': request.get_full_path()})
         return context
@@ -40,7 +39,7 @@ class SubscriptionCMSPlugin(CMSPluginBase):
         return patterns('', url(
             r'^subscribe/$', never_cache(subscription_view),
             name='aldryn-mailchimp-subscribe'),
-        )
+                        )
 
 
 @plugin_pool.register_plugin

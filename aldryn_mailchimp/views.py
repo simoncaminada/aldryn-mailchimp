@@ -12,7 +12,7 @@ from django.views.generic import FormView, DetailView
 from mailchimp3 import MailChimp
 
 from .utils import get_language_for_code
-from .forms import SubscriptionPluginForm
+from .utils import get_subscription_plugin_form
 from .models import SubscriptionPlugin, Campaign
 
 
@@ -26,7 +26,7 @@ ERROR_MESSAGES = {
 
 
 class SubscriptionView(FormView):
-    form_class = SubscriptionPluginForm
+    form_class = get_subscription_plugin_form()
     template_name = 'aldryn_mailchimp/subscription.html'
 
     def form_valid(self, form):
